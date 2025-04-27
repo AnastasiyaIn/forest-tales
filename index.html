@@ -3,27 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Лесные Проказники — интерактивные сказки для детей">
+    <meta name="theme-color" content="#2e7d32">
+    <!-- Мета-теги для iOS, чтобы убрать интерфейс браузера -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Лесные Проказники - Интерактивные Сказки</title>
     <!-- Подключаем шрифт Nunito через Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="/styles.css">
+    <!-- Подключаем manifest.json для PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <!-- Favicon для браузера -->
+    <link rel="icon" href="/assets/icons/icon-192x192.png" type="image/png">
+    <!-- Стили для уведомления об установке -->
+    <style>
+        .install-prompt {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #2e7d32;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            font-family: 'Nunito', sans-serif;
+            font-size: 16px;
+            text-align: center;
+            max-width: 300px;
+            z-index: 1000;
+        }
+        .install-prompt button {
+            background-color: #f0f4e8;
+            color: #2e7d32;
+            border: none;
+            padding: 8px 16px;
+            margin: 10px 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+        .install-prompt button:hover {
+            background-color: #d4e0c2;
+        }
+    </style>
     <!-- Firebase SDK для аналитики (подключаем как модуль) -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
         import { getAnalytics, logEvent } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js';
-
-        // Инициализация Firebase
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID",
-            measurementId: "YOUR_MEASUREMENT_ID"
-        };
+        import { firebaseConfig } from '/firebase-config.js';
 
         try {
             const app = initializeApp(firebaseConfig);
@@ -45,10 +77,10 @@
         </header>
         
         <div class="book-info">
-            <img src="assets/images/obloz.jpg" alt="Обложка книги" class="cover-image">
+            <img src="/assets/images/obloz.jpg" alt="Обложка книги" class="cover-image">
             
             <div class="action-buttons">
-                <button class="start-button" onclick="window.location.href='toc.html'">Начать Читать</button>
+                <button class="start-button" onclick="window.location.href='/toc.html'">Начать Читать</button>
                 <button class="support-button" onclick="window.open('https://donate.stream/yoomoney4100118537888423', '_blank')">Поддержать Проект</button>
             </div>
             
@@ -71,5 +103,62 @@
     <footer class="footer">
         <p>© 2025 Лесные Проказники. Все права защищены.</p>
     </footer>
+    <!-- Уведомление об установке -->
+    <div class="install-prompt" id="installPrompt">
+        <p>Добавьте "Лесные Проказники" на главный экран!</p>
+        <button onclick="installApp()">Установить</button>
+        <button onclick="dismissPrompt()">Позже</button>
+    </div>
+    <!-- Регистрация Service Worker для PWA и уведомление об установке -->
+    <script>
+        // Регистрация Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => console.log('Service Worker registered:', registration))
+                    .catch(error => console.error('Service Worker registration failed:', error));
+            });
+        }
+
+        // Логика уведомления об установке
+        let deferredPrompt;
+        const installPrompt = document.getElementById('installPrompt');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Предотвращаем автоматическое открытие браузером
+            e.preventDefault();
+            // Сохраняем событие, чтобы вызвать его позже
+            deferredPrompt = e;
+            // Показываем уведомление
+            installPrompt.style.display = 'block';
+        });
+
+        window.installApp = function() {
+            // Показываем системное окно установки
+            deferredPrompt.prompt();
+            // Ждём, что выберет пользователь
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('Пользователь установил приложение');
+                } else {
+                    console.log('Пользователь отказался от установки');
+                }
+                // Сбрасываем событие и скрываем уведомление
+                deferredPrompt = null;
+                installPrompt.style.display = 'none';
+            });
+        };
+
+        window.dismissPrompt = function() {
+            // Скрываем уведомление, если пользователь нажал "Позже"
+            installPrompt.style.display = 'none';
+        };
+
+        // Скрываем уведомление, если приложение уже установлено
+        window.addEventListener('appinstalled', () => {
+            installPrompt.style.display = 'none';
+            console.log('Приложение было установлено');
+        });
+    </script>
 </body>
 </html>

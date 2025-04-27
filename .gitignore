@@ -11,11 +11,9 @@ firebase-debug.*.log*
 .firebase/
 
 # Firebase config
-
-# Uncomment this if you'd like others to create their own Firebase project.
-# For a team working on the same Firebase project(s), it is recommended to leave
-# it commented so all members can deploy to the same project(s) in .firebaserc.
-# .firebaserc
+.firebaserc
+firebase.json
+firebase-config.js
 
 # Runtime data
 pids
@@ -67,3 +65,34 @@ node_modules/
 
 # dataconnect generated files
 .dataconnect
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+
+# Build directories
+dist/
+build/
+
+# Prettier cache (optional, for future use)
+.prettier-cache
+
+# Parcel cache (optional, for future use)
+.parcel-cache
+
+# IntelliJ IDEA (optional, for future use)
+.idea/
+*.iml
+
+# ESLint cache (optional, for future use)
+.eslintcache
+
+# Browser testing (optional, for future use)
+*.db
