@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лесные Проказники - Содержание</title>
+    <!-- Подключаем шрифт Nunito через Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <!-- Firebase SDK для аналитики (подключаем как модуль) -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+        import { getAnalytics, logEvent } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js';
+
+        // Инициализация Firebase
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID",
+            measurementId: "YOUR_MEASUREMENT_ID"
+        };
+
+        try {
+            const app = initializeApp(firebaseConfig);
+            const analytics = getAnalytics(app);
+            logEvent(analytics, 'page_view', {
+                page_title: 'Table of Contents',
+                page_location: window.location.href
+            });
+            console.log('Firebase initialized successfully');
+        } catch (error) {
+            console.error('Failed to initialize Firebase:', error);
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Лесные Проказники</h1>
+            <p class="subtitle">Содержание</p>
+        </header>
+        <div class="toc-container" id="toc">
+            <!-- Список сказок добавляется через JavaScript (toc.js) -->
+            <!-- Убедись, что toc.js генерирует карточки с правильной структурой: -->
+            <!-- <div class="story-card"> -->
+            <!--     <a href="story{id}.html" class="story-link"> -->
+            <!--         <div class="story-card-image"> -->
+            <!--             <img src="assets/images/{cover}" alt="{title}" class="story-cover"> -->
+            <!--         </div> -->
+            <!--         <div class="story-card-content"> -->
+            <!--             <h2>{title}</h2> -->
+            <!--             <p>{description}</p> -->
+            <!--             <span class="read-text">ЧИТАТЬ СКАЗКУ</span> -->
+            <!--         </div> -->
+            <!--     </a> -->
+            <!-- </div> -->
+        </div>
+        <div class="button-container">
+            <a href="index.html" class="back-button">Назад</a>
+        </div>
+    </div>
+    <footer class="footer">
+        <p>© 2025 Лесные Проказники. Все права защищены.</p>
+    </footer>
+    <script type="module" src="toc.js"></script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лесные Проказники - Интерактивные Сказки</title>
+    <!-- Подключаем шрифт Nunito через Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <!-- Firebase SDK для аналитики (подключаем как модуль) -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+        import { getAnalytics, logEvent } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js';
+
+        // Инициализация Firebase
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID",
+            measurementId: "YOUR_MEASUREMENT_ID"
+        };
+
+        try {
+            const app = initializeApp(firebaseConfig);
+            const analytics = getAnalytics(app);
+            logEvent(analytics, 'page_view', {
+                page_title: 'Home Page',
+                page_location: window.location.href
+            });
+            console.log('Firebase initialized successfully');
+        } catch (error) {
+            console.error('Failed to initialize Firebase:', error);
+        }
+    </script>
+</head>
+<body class="start-page">
+    <div class="container">
+        <header class="header">
+            <h1>Лесные Проказники</h1>
+        </header>
+        
+        <div class="book-info">
+            <img src="assets/images/obloz.jpg" alt="Обложка книги" class="cover-image">
+            
+            <div class="action-buttons">
+                <button class="start-button" onclick="window.location.href='toc.html'">Начать Читать</button>
+                <button class="support-button" onclick="window.open('https://donate.stream/yoomoney4100118537888423', '_blank')">Поддержать Проект</button>
+            </div>
+            
+            <div class="description">
+                <p>Добро пожаловать в волшебный лес, где каждый день превращается в новое приключение!</p>
+                <p>В этой книге собраны добрые и весёлые истории о двух братьях — Артёме-Волке и Дане-Лисёнке, которые, как и все дети, любят исследовать мир, придумывать игры и иногда попадать в забавные передряги. Артём — рассудительный, смелый и заботливый, а Даня — неугомонный, хитрый и невероятно любопытный. Вместе они учатся дружбе, ответственности и тому, как важно заботиться о природе и друг о друге.</p>
+                <p>Каждый рассказ — это отдельное приключение, полное тёплого юмора, неожиданных поворотов и важных детских открытий. Истории написаны с любовью к детям и основаны на реальных характерах двух маленьких братьев — моих сыновей, которые вдохновили меня на создание этого сборника.</p>
+                <p>Прыгайте в путешествие вместе с Волком и Лисёнком — впереди столько тайн, смеха и новых знаний!</p>
+                
+                <p><strong>В этой книге:</strong></p>
+                <ul>
+                    <li>Увлекательные истории о лесных друзьях</li>
+                    <li>Красочные иллюстрации</li>
+                    <li>Озвучка каждой части истории</li>
+                    <li>Удобное чтение на любом устройстве</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <footer class="footer">
+        <p>© 2025 Лесные Проказники. Все права защищены.</p>
+    </footer>
+</body>
+</html>
