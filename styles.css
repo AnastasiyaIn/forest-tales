@@ -8,9 +8,18 @@ body {
     overscroll-behavior: none; /* Отключаем "резиновый" эффект прокрутки на iOS */
 }
 
+body.dark-theme {
+    background-color: #1a2b1a;
+    color: #e0e0e0;
+}
+
 /* Стили для главной страницы (start-page) */
 body.start-page {
     background: linear-gradient(to bottom, #e0e8d8, #f0f4e8);
+}
+
+body.start-page.dark-theme {
+    background: linear-gradient(to bottom, #2a3b2a, #1a2b1a);
 }
 
 .container, .story-container {
@@ -36,6 +45,11 @@ body.start-page {
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
 }
 
+body.dark-theme .header h1 {
+    color: #8bc34a;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
 #interactive-title {
     text-align: center;
     color: #6b9b37;
@@ -44,11 +58,19 @@ body.start-page {
     margin-bottom: 20px;
 }
 
+body.dark-theme #interactive-title {
+    color: #8bc34a;
+}
+
 .subtitle {
     color: #555;
     font-size: 1.5rem;
     font-weight: 400;
     margin: 10px 0;
+}
+
+body.dark-theme .subtitle {
+    color: #b0b0b0;
 }
 
 /* Стили для book-info на главной странице */
@@ -63,6 +85,10 @@ body.start-page {
     margin: 20px auto;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     display: block;
+}
+
+body.dark-theme .cover-image {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
 }
 
 /* Общие стили для всех кнопок */
@@ -90,14 +116,34 @@ body.start-page {
     gap: 8px;
 }
 
+body.dark-theme .start-button,
+body.dark-theme .support-button,
+body.dark-theme .back-button,
+body.dark-theme .read-button,
+body.dark-theme .nav-btn {
+    background-color: #4caf50;
+}
+
 .start-button:hover, .support-button:hover, .back-button:hover, .read-button:hover, .nav-btn:hover {
     background-color: #1b5e20;
     transform: scale(1.05);
 }
 
+body.dark-theme .start-button:hover,
+body.dark-theme .support-button:hover,
+body.dark-theme .back-button:hover,
+body.dark-theme .read-button:hover,
+body.dark-theme .nav-btn:hover {
+    background-color: #388e3c;
+}
+
 .nav-btn:disabled {
     background-color: #ccc;
     cursor: not-allowed;
+}
+
+body.dark-theme .nav-btn:disabled {
+    background-color: #555;
 }
 
 .description {
@@ -129,7 +175,7 @@ body.start-page {
     margin: 20px 0;
 }
 
-/* Иконки для кнопок навигации */
+/* Иконки для кноп [иконки для кнопок навигации]
 .nav-icon {
     display: inline-block;
     width: 16px;
@@ -164,6 +210,10 @@ body.start-page {
     color: #555;
 }
 
+body.dark-theme #page-counter {
+    color: #b0b0b0;
+}
+
 /* Стили для модального окна */
 .modal {
     position: fixed;
@@ -178,6 +228,10 @@ body.start-page {
     z-index: 1000;
 }
 
+body.dark-theme .modal {
+    background: rgba(0, 0, 0, 0.8);
+}
+
 .modal-content {
     background: white;
     padding: 2rem;
@@ -188,6 +242,11 @@ body.start-page {
     width: 90%;
 }
 
+body.dark-theme .modal-content {
+    background: #2a3b2a;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
 .modal-content h2 {
     color: #2e7d32;
     font-size: 1.5rem;
@@ -195,11 +254,19 @@ body.start-page {
     margin-bottom: 1rem;
 }
 
+body.dark-theme .modal-content h2 {
+    color: #8bc34a;
+}
+
 .modal-content p {
     color: #333;
     font-size: 1rem;
     font-weight: 400;
     margin-bottom: 1.5rem;
+}
+
+body.dark-theme .modal-content p {
+    color: #e0e0e0;
 }
 
 .modal-buttons {
@@ -219,8 +286,16 @@ body.start-page {
     transition: background-color 0.3s ease;
 }
 
+body.dark-theme .play-button {
+    background-color: #4caf50;
+}
+
 .play-button:hover {
     background-color: #1b5e20;
+}
+
+body.dark-theme .play-button:hover {
+    background-color: #388e3c;
 }
 
 .close-button {
@@ -235,8 +310,17 @@ body.start-page {
     transition: background-color 0.3s ease;
 }
 
+body.dark-theme .close-button {
+    background-color: #555;
+    color: #e0e0e0;
+}
+
 .close-button:hover {
     background-color: #bbb;
+}
+
+body.dark-theme .close-button:hover {
+    background-color: #666;
 }
 
 /* Стили для частей сказки */
@@ -247,6 +331,11 @@ body.start-page {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     margin-bottom: 20px;
     display: none;
+}
+
+body.dark-theme .story-part {
+    background: #2a3b2a;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
 }
 
 .story-part.active {
@@ -287,9 +376,18 @@ body.start-page {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
+body.dark-theme .story-card {
+    background: #2a3b2a;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+}
+
 .story-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 5px 12px rgba(0, 0, 0, 0.15);
+}
+
+body.dark-theme .story-card:hover {
+    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.7);
 }
 
 .story-link {
@@ -307,6 +405,10 @@ body.start-page {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+body.dark-theme .story-card-image {
+    background-color: #2a3b2a;
 }
 
 .story-cover {
@@ -332,6 +434,10 @@ body.start-page {
     text-transform: uppercase;
 }
 
+body.dark-theme .story-card-content h2 {
+    color: #8bc34a;
+}
+
 .story-card-content p {
     font-size: 0.9rem;
     color: #444;
@@ -341,6 +447,10 @@ body.start-page {
     flex-grow: 1;
 }
 
+body.dark-theme .story-card-content p {
+    color: #b0b0b0;
+}
+
 .read-text {
     color: #2e7d32;
     font-size: 0.9rem;
@@ -348,6 +458,10 @@ body.start-page {
     text-transform: uppercase;
     text-decoration: none;
     margin-top: 10px;
+}
+
+body.dark-theme .read-text {
+    color: #8bc34a;
 }
 
 /* Стили для кнопки "Назад" */
@@ -383,12 +497,23 @@ body.start-page {
     cursor: pointer;
     font-size: 1rem;
     font-weight: 400;
+    color: #333; /* Явно задаём цвет текста в светлой теме */
     transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+body.dark-theme .quiz-option {
+    background: #2a3b2a;
+    border-color: #4caf50;
+    color: #e0e0e0; /* Исправляем цвет текста в тёмной теме */
 }
 
 .quiz-option:hover {
     background-color: #e0e8d8;
     transform: scale(1.05);
+}
+
+body.dark-theme .quiz-option:hover {
+    background-color: #3a4b3a;
 }
 
 .quiz-option.correct {
@@ -397,10 +522,20 @@ body.start-page {
     border-color: #1b5e20;
 }
 
+body.dark-theme .quiz-option.correct {
+    background-color: #4caf50;
+    border-color: #388e3c;
+}
+
 .quiz-option.incorrect {
     background-color: #d9534f;
     color: white;
     border-color: #c9302c;
+}
+
+body.dark-theme .quiz-option.incorrect {
+    background-color: #b71c1c;
+    border-color: #9a0007;
 }
 
 .quiz-option:disabled {
@@ -427,13 +562,21 @@ body.start-page {
     cursor: pointer;
     font-size: 1rem;
     font-weight: 700;
-    margin-top: 10px;
+    margin-top:  conoscenze10px;
     transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+body.dark-theme .next-button {
+    background-color: #4caf50;
 }
 
 .next-button:hover {
     background-color: #1b5e20;
     transform: scale(1.05);
+}
+
+body.dark-theme .next-button:hover {
+    background-color: #388e3c;
 }
 
 .match-container {
@@ -551,6 +694,10 @@ body.start-page {
     cursor: pointer;
 }
 
+body.dark-theme .evolution-cell {
+    background: #2a3b2a;
+}
+
 .evolution-cell.hidden {
     display: none;
 }
@@ -563,6 +710,10 @@ body.start-page {
 
 .evolution-cell.adult {
     background: #e0e8d8;
+}
+
+body.dark-theme .evolution-cell.adult {
+    background: #3a4b3a;
 }
 
 .evolution-cell.evolving {
@@ -645,9 +796,19 @@ body.start-page {
     transition: background-color 0.3s ease, transform 0.3s ease;
 }
 
+body.dark-theme .restart-button,
+body.dark-theme .back-button {
+    background-color: #4caf50;
+}
+
 .restart-button:hover, .back-button:hover {
     background-color: #1b5e20;
     transform: scale(1.05);
+}
+
+body.dark-theme .restart-button:hover,
+body.dark-theme .back-button:hover {
+    background-color: #388e3c;
 }
 
 /* Стили для отладочного текста */
@@ -661,6 +822,11 @@ body.start-page {
     font-size: 0.9rem;
     color: #333;
     z-index: 1000;
+}
+
+body.dark-theme .debug-info {
+    background-color: rgba(0, 0, 0, 0.8);
+    color: #e0e0e0;
 }
 
 /* Стили для пазла */
@@ -688,6 +854,10 @@ body.start-page {
     order: 2; /* Теперь строка с кусочками идёт второй (снизу) */
 }
 
+body.dark-theme .puzzle-pieces {
+    background-color: #2a3b2a;
+}
+
 .puzzle-pieces::-webkit-scrollbar {
     height: 8px;
 }
@@ -697,8 +867,16 @@ body.start-page {
     border-radius: 4px;
 }
 
+body.dark-theme .puzzle-pieces::-webkit-scrollbar-thumb {
+    background-color: #4caf50;
+}
+
 .puzzle-pieces::-webkit-scrollbar-track {
     background-color: #f0f4e8;
+}
+
+body.dark-theme .puzzle-pieces::-webkit-scrollbar-track {
+    background-color: #1a2b1a;
 }
 
 .puzzle-grid {
@@ -711,6 +889,10 @@ body.start-page {
     margin: 0 auto;
     box-sizing: border-box;
     order: 1; /* Сетка идёт первой (сверху) */
+}
+
+body.dark-theme .puzzle-grid {
+    border-color: #4caf50;
 }
 
 .puzzle-cell {
@@ -726,6 +908,10 @@ body.start-page {
     overflow: hidden;
 }
 
+body.dark-theme .puzzle-cell {
+    background-color: #2a3b2a;
+}
+
 .puzzle-piece {
     width: 100px;
     height: 100px;
@@ -735,6 +921,10 @@ body.start-page {
     transition: transform 0.3s ease;
     display: inline-block;
     box-sizing: border-box;
+}
+
+body.dark-theme .puzzle-piece {
+    border-color: #4caf50;
 }
 
 .puzzle-piece:hover {
@@ -774,6 +964,11 @@ body.start-page {
     margin-top: 20px;
 }
 
+body.dark-theme .footer {
+    background: #2a3b2a;
+    color: #b0b0b0;
+}
+
 /* Стили для ошибок */
 .error {
     background: #f8d7da;
@@ -783,9 +978,194 @@ body.start-page {
     text-align: center;
 }
 
+body.dark-theme .error {
+    background: #5a1c24;
+    color: #f4a8ae;
+}
+
 .error-details {
     font-size: 0.9rem;
     color: #555;
+}
+
+body.dark-theme .error-details {
+    color: #b0b0b0;
+}
+
+/* Стили для интерактива "Помоги реке стать чистой" */
+.river-container {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    aspect-ratio: 1 / 1; /* Соотношение сторон 1:1 */
+    background-size: 100% 100%; /* Растягиваем фон на весь контейнер */
+    background-position: center;
+    margin: 0 auto;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-theme .river-container {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+.river-item {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    cursor: pointer;
+    transition: opacity 0.5s ease;
+}
+
+.river-item:hover {
+    transform: scale(1.1);
+}
+
+.river-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.river-item.removed {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.river-item.incorrect {
+    animation: shake 0.5s ease;
+}
+
+.river-item.wiggle {
+    animation: wiggle 0.5s ease-in-out infinite;
+}
+
+.river-result {
+    text-align: center;
+    margin-top: 20px;
+}
+
+@keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    50% { transform: translateX(10px); }
+    75% { transform: translateX(-10px); }
+    100% { transform: translateX(0); }
+}
+
+@keyframes wiggle {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-5px); }
+    100% { transform: translateX(0); }
+}
+
+/* Стили для лабиринта */
+.maze-container {
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.maze-grid {
+    display: inline-grid;
+    gap: 0;
+    border: 2px solid #2e7d32;
+    border-radius: 8px;
+    background-color: #f0f4e8;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+body.dark-theme .maze-grid {
+    background-color: #2a3b2a;
+    border-color: #4caf50;
+}
+
+.maze-cell {
+    width: 60px;
+    height: 60px;
+    position: relative;
+    box-sizing: border-box;
+    overflow: hidden; /* Чтобы изображения не вылезали за границы */
+}
+
+.maze-cell img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.maze-cell.wall {
+    background-color: #ccc;
+}
+
+body.dark-theme .maze-cell.wall {
+    background-color: #555;
+}
+
+.maze-cell.path {
+    background-color: #e0e8d8;
+}
+
+body.dark-theme .maze-cell.path {
+    background-color: #3a4b3a;
+}
+
+.maze-cell.vertical-wall {
+    height: 120px; /* Деревья выше, занимают две клетки */
+    top: -30px; /* Смещение, чтобы дерево выглядело естественно */
+    grid-row: span 2; /* Занимает две строки в сетке */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.maze-cell.vertical-wall img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.maze-player {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    z-index: 10;
+    transition: all 0.3s ease; /* Плавное перемещение персонажа */
+}
+
+.maze-player img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.maze-cell.end {
+    position: relative;
+}
+
+.maze-cell.end img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.maze-result {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.maze-result p {
+    font-size: 1.2rem;
+    font-weight: 400;
 }
 
 /* Адаптация для мобильных устройств */
@@ -807,6 +1187,10 @@ body.start-page {
         flex: 0 0 100px;
         aspect-ratio: 1 / 1;
         background-color: #ffffff;
+    }
+
+    body.dark-theme .story-card-image {
+        background-color: #2a3b2a;
     }
 
     .story-cover {
@@ -855,6 +1239,10 @@ body.start-page {
         order: 1;
     }
 
+    body.dark-theme .puzzle-grid {
+        border-color: #4caf50;
+    }
+
     .puzzle-cell {
         width: 100px;
         height: 100px;
@@ -865,6 +1253,10 @@ body.start-page {
         align-items: center;
         justify-content: center;
         overflow: hidden;
+    }
+
+    body.dark-theme .puzzle-cell {
+        background-color: #2a3b2a;
     }
 
     .puzzle-pieces {
@@ -880,6 +1272,10 @@ body.start-page {
         order: 2;
     }
 
+    body.dark-theme .puzzle-pieces {
+        background-color: #2a3b2a;
+    }
+
     .puzzle-piece {
         width: 100px;
         height: 100px;
@@ -887,6 +1283,10 @@ body.start-page {
         border-radius: 5px;
         display: inline-block;
         box-sizing: border-box;
+    }
+
+    body.dark-theme .puzzle-piece {
+        border-color: #4caf50;
     }
 
     .puzzle-piece.dragging {
@@ -917,5 +1317,54 @@ body.start-page {
         0% { transform: scale(1); }
         50% { transform: scale(1.05); } /* Меньший масштаб для мобильных */
         100% { transform: scale(1); }
+    }
+
+    /* Адаптация лабиринта для мобильных */
+    .maze-container {
+        max-width: 100%;
+        padding: 0 10px;
+    }
+
+    .maze-grid {
+        transform: scale(0.8);
+        transform-origin: top center;
+        margin: 0 auto;
+    }
+
+    .maze-cell {
+        width: 50px;
+        height: 50px;
+    }
+
+    .maze-cell img {
+        width: 100%;
+        height: 100%;
+    }
+
+    .maze-cell.vertical-wall {
+        height: 100px; /* Уменьшаем высоту для мобильных */
+        top: -25px; /* Корректируем смещение */
+        grid-row: span 2; /* Занимает две строки */
+    }
+
+    .maze-cell.vertical-wall img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .maze-player {
+        width: 50px;
+        height: 50px;
+    }
+
+    .maze-player img {
+        width: 100%;
+        height: 100%;
+    }
+
+    .maze-cell.end img {
+        width: 100%;
+        height: 100%;
     }
 }

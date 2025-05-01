@@ -2,7 +2,346 @@ console.log('interactive.js loaded'); // Проверка загрузки ск�
 
 import { showError, checkProtocol } from './utils.js';
 
-// Объявляем функцию как async, чтобы использовать await
+// Функция загрузки позиций из маски (нужна для игры "Ручей")
+async function loadMaskPositions(maskUrl) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.src = maskUrl;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+
+            console.log(`Mask loaded: ${maskUrl}, size: ${img.width}x${img.height}`);
+
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+
+            const positions = [];
+            let nonWhitePixels = 0;
+            for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                    const index = (y * canvas.width + x) * 4;
+                    const r = data[index];
+                    const g = data[index + 1];
+                    const b = data[index + 2];
+                    if (r === 255 && g === 255 && b === 255) {
+                        positions.push({ x, y });
+                    } else {
+                        nonWhitePixels++;
+                        if (nonWhitePixels <= 5) {
+                            console.log(`Non-white pixel at (${x}, ${y}): r=${r}, g=${g}, b=${b}`);
+                        }
+                    }
+                }
+            }
+
+            console.log(`Found ${positions.length} valid positions in mask: ${maskUrl}`);
+            console.log(`Non-white pixels: ${nonWhitePixels}`);
+            if (positions.length === 0) {
+                console.warn(`No valid positions found in mask: ${maskUrl}`);
+            }
+            resolve(positions);
+        };
+        img.onerror = () => {
+            reject(new Error(`Failed to load mask image: ${maskUrl}`));
+        };
+    });
+}
+
+async function displayMaze(interactive, step, interactiveContainer, storyIndex, interactiveId) {
+    console.log('Displaying maze game:', interactive, 'Step:', step);
+
+    if (!step.levels || !Array.isArray(step.levels) || step.levels.length === 0) {
+        throw new Error('В интерактиве типа "maze" отсутствует или некорректно поле "steps[0].levels". Ожидается массив уровней с полями rows, cols, layout, start, end.');
+    }
+
+    const mazeContainer = document.createElement('div');
+    mazeContainer.className = 'maze-container';
+
+    // Описание
+    const description = document.createElement('p');
+    description.className = 'interactive-description';
+    mazeContainer.appendChild(description);
+
+    // Получаем уровень из URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const levelIndex = parseInt(urlParams.get('level')) || 0;
+    const selectedLevel = step.levels[Math.min(levelIndex, step.levels.length - 1)];
+
+    // Проверяем структуру уровня
+    if (!selectedLevel.rows || !selectedLevel.cols || !selectedLevel.layout || !selectedLevel.start || !selectedLevel.end) {
+        throw new Error('В уровне лабиринта отсутствуют обязательные поля: rows, cols, layout, start, end.');
+    }
+
+    // Обновляем описание
+    const totalLevels = step.levels.length;
+    function updateDescription() {
+        description.textContent = `Помоги зверьку найти сундук! Уровень ${levelIndex + 1}/${totalLevels}`;
+    }
+    updateDescription();
+
+    // Создаём сетку лабиринта
+    const mazeGrid = document.createElement('div');
+    mazeGrid.className = 'maze-grid';
+    mazeGrid.style.gridTemplateRows = `repeat(${selectedLevel.rows}, 60px)`; // Фиксируем размер клеток
+    mazeGrid.style.gridTemplateColumns = `repeat(${selectedLevel.cols}, 60px)`;
+
+    // Текущая позиция персонажа
+    let playerPosition = { row: selectedLevel.start.row, col: selectedLevel.start.col };
+    let playerElement = null;
+
+    // Копия layout для безопасного изменения
+    const layoutCopy = JSON.parse(JSON.stringify(selectedLevel.layout));
+
+    // Обрабатываем препятствия из selectedLevel.obstacles
+    if (selectedLevel.obstacles && Array.isArray(selectedLevel.obstacles)) {
+        selectedLevel.obstacles.forEach(obstacle => {
+            const { row, col } = obstacle;
+            // Проверяем корректность данных
+            if (row === undefined || col === undefined) {
+                console.warn(`Недопустимые данные препятствия:`, obstacle);
+                return;
+            }
+            if (row < 0 || row >= selectedLevel.rows || col < 0 || col >= selectedLevel.cols) {
+                console.warn(`Позиция препятствия выходит за границы: row=${row}, col=${col}`);
+                return;
+            }
+            // Обновляем layoutCopy
+            layoutCopy[row][col] = 1;
+        });
+    }
+
+    // Заполняем сетку
+    for (let row = 0; row < selectedLevel.rows; row++) {
+        for (let col = 0; col < selectedLevel.cols; col++) {
+            const cell = document.createElement('div');
+            cell.className = 'maze-cell';
+            cell.setAttribute('data-row', row);
+            cell.setAttribute('data-col', col);
+
+            // Проверяем, что layout корректен
+            if (!layoutCopy[row] || layoutCopy[row][col] === undefined) {
+                throw new Error(`Некорректный layout в уровне ${levelIndex}: отсутствует строка ${row} или столбец ${col}.`);
+            }
+
+            const cellType = layoutCopy[row][col];
+
+            if (cellType === 1) {
+                // Стена или препятствие
+                cell.classList.add('wall');
+
+                // Выбираем изображение: чередуем wallImage и secondaryWallImage для всех клеток с cellType === 1
+                const wallImage = Math.random() < 0.5 && selectedLevel.secondaryWallImage
+                    ? selectedLevel.secondaryWallImage
+                    : (selectedLevel.wallImage || 'assets/images/wall1.png');
+
+                const img = document.createElement('img');
+                img.src = wallImage;
+                img.alt = 'Стена или препятствие';
+                img.onerror = () => {
+                    console.warn(`Не удалось загрузить изображение: ${wallImage}`);
+                    img.src = 'assets/images/placeholder.jpg';
+                };
+                cell.appendChild(img);
+            } else {
+                // Путь
+                cell.classList.add('path');
+                if (selectedLevel.pathImage) {
+                    const img = document.createElement('img');
+                    img.src = selectedLevel.pathImage;
+                    img.alt = 'Путь';
+                    img.onerror = () => {
+                        console.warn(`Не удалось загрузить изображение пути: ${selectedLevel.pathImage}`);
+                        img.src = 'assets/images/placeholder.jpg';
+                    };
+                    cell.appendChild(img);
+                }
+
+                // Стартовая позиция
+                if (row === selectedLevel.start.row && col === selectedLevel.start.col) {
+                    playerElement = document.createElement('div');
+                    playerElement.className = 'maze-player';
+                    const img = document.createElement('img');
+                    img.src = selectedLevel.character || 'assets/images/placeholder.jpg';
+                    img.alt = 'Персонаж';
+                    img.onerror = () => {
+                        console.warn(`Не удалось загрузить изображение персонажа: ${selectedLevel.character}`);
+                        img.src = 'assets/images/placeholder.jpg';
+                    };
+                    playerElement.appendChild(img);
+                    cell.appendChild(playerElement);
+                }
+
+                // Финиш
+                if (row === selectedLevel.end.row && col === selectedLevel.end.col) {
+                    cell.classList.add('end');
+                    if (selectedLevel.endImage) {
+                        const img = document.createElement('img');
+                        img.src = selectedLevel.endImage;
+                        img.alt = 'Финиш';
+                        img.onerror = () => {
+                            console.warn(`Не удалось загрузить конечное изображение: ${selectedLevel.endImage}`);
+                            img.src = 'assets/images/placeholder.jpg';
+                        };
+                        cell.appendChild(img);
+                    }
+                }
+            }
+            mazeGrid.appendChild(cell);
+        }
+    }
+
+    mazeContainer.appendChild(mazeGrid);
+    interactiveContainer.appendChild(mazeContainer);
+
+    // Управление персонажем
+    function movePlayer(direction) {
+        let newRow = playerPosition.row;
+        let newCol = playerPosition.col;
+
+        switch (direction) {
+            case 'up':
+                newRow--;
+                break;
+            case 'down':
+                newRow++;
+                break;
+            case 'left':
+                newCol--;
+                break;
+            case 'right':
+                newCol++;
+                break;
+            default:
+                return;
+        }
+
+        // Проверяем, не выходит ли новая позиция за пределы сетки
+        if (newRow < 0 || newRow >= selectedLevel.rows || newCol < 0 || newCol >= selectedLevel.cols) {
+            const bumpSound = new Audio('assets/audio/bump.mp3');
+            bumpSound.play().catch(error => console.error('Failed to play bump sound:', error));
+            return;
+        }
+
+        // Проверяем, не стена ли на новой позиции (используем layoutCopy)
+        console.log(`Проверка движения на (${newRow}, ${newCol}): layoutCopy[${newRow}][${newCol}] = ${layoutCopy[newRow][newCol]}`);
+        if (layoutCopy[newRow][newCol] === 1) {
+            console.log('Обнаружена стена, движение заблокировано.');
+            const bumpSound = new Audio('assets/audio/bump.mp3');
+            bumpSound.play().catch(error => console.error('Failed to play bump sound:', error));
+            return;
+        }
+
+        // Проигрываем звук шага
+        const stepSound = new Audio('assets/audio/step.mp3');
+        stepSound.play().catch(error => console.error('Failed to play step sound:', error));
+
+        // Обновляем позицию
+        playerPosition.row = newRow;
+        playerPosition.col = newCol;
+
+        // Перемещаем персонажа в DOM
+        const newCell = mazeGrid.querySelector(`.maze-cell[data-row="${newRow}"][data-col="${newCol}"]`);
+        newCell.appendChild(playerElement);
+
+        // Проверяем победу
+        if (playerPosition.row === selectedLevel.end.row && playerPosition.col === selectedLevel.end.col) {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'maze-result';
+            resultDiv.innerHTML = `<p>Поздравляем! Ты нашёл сундук!</p>`;
+
+            const celebrationSound = new Audio('assets/audio/celebration.mp3');
+            celebrationSound.play().catch(error => {
+                console.error('Failed to play celebration sound:', error);
+            });
+
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'result-buttons';
+
+            if (levelIndex + 1 < step.levels.length) {
+                // Переход на следующий уровень
+                setTimeout(() => {
+                    window.location.href = `interactive.html?story=${storyIndex}&interactive=${interactiveId}&level=${levelIndex + 1}`;
+                }, 2000);
+            } else {
+                // Последний уровень — кнопка "Играть ещё раз"
+                const restartButton = document.createElement('button');
+                restartButton.className = 'restart-button';
+                restartButton.textContent = 'Играть ещё раз';
+                restartButton.addEventListener('click', () => {
+                    window.location.href = `interactive.html?story=${storyIndex}&interactive=${interactiveId}&level=0`;
+                });
+                buttonContainer.appendChild(restartButton);
+            }
+
+            resultDiv.appendChild(buttonContainer);
+            interactiveContainer.appendChild(resultDiv);
+        }
+    }
+
+    // Управление клавишами
+    document.addEventListener('keydown', (e) => {
+        switch (e.key) {
+            case 'ArrowUp':
+            case 'w':
+                movePlayer('up');
+                break;
+            case 'ArrowDown':
+            case 's':
+                movePlayer('down');
+                break;
+            case 'ArrowLeft':
+            case 'a':
+                movePlayer('left');
+                break;
+            case 'ArrowRight':
+            case 'd':
+                movePlayer('right');
+                break;
+        }
+    });
+
+    // Управление свайпами (для мобильных устройств)
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    mazeContainer.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+    }, { passive: false });
+
+    mazeContainer.addEventListener('touchend', (e) => {
+        if (!e.changedTouches || e.changedTouches.length !== 1) return;
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = touchEndY - touchStartY;
+
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+            // Горизонтальный свайп
+            if (deltaX > 50) {
+                movePlayer('right');
+            } else if (deltaX < -50) {
+                movePlayer('left');
+            }
+        } else {
+            // Вертикальный свайп
+            if (deltaY > 50) {
+                movePlayer('down');
+            } else if (deltaY < -50) {
+                movePlayer('up');
+            }
+        }
+    }, { passive: false });
+}
+
+// Основная функция инициализации
 async function initInteractivePage() {
     console.log('DOM loaded, initializing interactive page...');
 
@@ -15,7 +354,6 @@ async function initInteractivePage() {
         return;
     }
 
-    // Проверяем протокол
     const protocolCheck = checkProtocol();
     if (protocolCheck.isLocal) {
         showError(interactiveContainer, protocolCheck.error, protocolCheck.details);
@@ -23,7 +361,6 @@ async function initInteractivePage() {
         return;
     }
 
-    // Получаем параметры из URL
     const urlParams = new URLSearchParams(window.location.search);
     const storyIndex = parseInt(urlParams.get('story'), 10);
     const interactiveId = parseInt(urlParams.get('interactive'), 10);
@@ -34,7 +371,6 @@ async function initInteractivePage() {
         return;
     }
 
-    // Загружаем данные интерактива с использованием async/await
     try {
         console.log('Fetching interactives.json...');
         const response = await fetch('interactives.json');
@@ -60,7 +396,6 @@ async function initInteractivePage() {
         const interactive = data.interactives[interactiveId];
         console.log('Loaded interactive data:', interactive);
 
-        // Обновляем заголовок в зависимости от типа интерактива
         if (interactive.type === 'quiz') {
             interactiveTitleElement.textContent = 'Викторина: ответь правильно на вопросы';
         } else if (interactive.type === 'match') {
@@ -77,17 +412,22 @@ async function initInteractivePage() {
             description.className = 'interactive-description';
             description.textContent = 'Перетаскивай кусочки пазла, чтобы собрать картинку!';
             interactiveContainer.appendChild(description);
+        } else if (interactive.type === 'river-cleanup') {
+            interactiveTitleElement.textContent = 'Помоги реке стать чистой';
+            const description = document.createElement('p');
+            description.className = 'interactive-description';
+            description.textContent = 'Убери весь мусор из реки, но не трогай рыбок и лилии!';
+            interactiveContainer.appendChild(description);
+        } else if (interactive.type === 'maze') {
+            interactiveTitleElement.textContent = 'Пройди лабиринт';
         } else {
             interactiveTitleElement.textContent = 'Интерактивная игра';
         }
 
-        // Проверяем наличие steps
         if (!interactive.steps || !Array.isArray(interactive.steps) || interactive.steps.length === 0) {
             throw new Error('В интерактиве отсутствует или некорректно поле "steps". Ожидается массив с данными интерактива.');
         }
 
-        // Для quiz: steps — это уже массив вопросов
-        // Для match, evolution и puzzle: steps[0] содержит нужные данные
         if (interactive.type === 'quiz') {
             displayQuiz(interactive, interactive.steps);
         } else if (interactive.type === 'match') {
@@ -99,8 +439,14 @@ async function initInteractivePage() {
         } else if (interactive.type === 'puzzle') {
             const step = interactive.steps[0];
             displayPuzzle(interactive, step);
+        } else if (interactive.type === 'river-cleanup') {
+            const step = interactive.steps[0];
+            await displayRiverCleanup(interactive, step);
+        } else if (interactive.type === 'maze') {
+            const step = interactive.steps[0];
+            await displayMaze(interactive, step, interactiveContainer, storyIndex, interactiveId);
         } else {
-            throw new Error(`Неизвестный тип интерактива: ${interactive.type}. Поддерживаются: quiz, match, evolution, puzzle.`);
+            throw new Error(`Неизвестный тип интерактива: ${interactive.type}. Поддерживаются: quiz, match, evolution, puzzle, river-cleanup, maze.`);
         }
     } catch (error) {
         console.error('Error loading interactive:', error);
@@ -111,36 +457,31 @@ async function initInteractivePage() {
         console.log('Displaying quiz:', interactive);
         console.log('Questions data:', questions);
 
-        // Проверяем, является ли questions массивом
         if (!Array.isArray(questions)) {
             throw new Error('В интерактиве типа "quiz" поле "steps" должно быть массивом вопросов.');
         }
 
-        // Проверяем наличие вопросов
         if (questions.length === 0) {
             throw new Error('В интерактиве типа "quiz" отсутствуют вопросы в поле "steps". Ожидается массив вопросов с полями question, options, correct и explanation.');
         }
 
-        // Выбираем 3 случайных вопроса без повторов
         const shuffledQuestions = questions.sort(() => Math.random() - 0.5);
         const selectedQuestions = shuffledQuestions.slice(0, 3);
 
         const quizContainer = document.createElement('div');
         quizContainer.className = 'quiz-question';
 
-        let correctAnswers = 0; // Счётчик правильных ответов
+        let correctAnswers = 0;
 
-        // Загружаем звук для клика по ответу
         const tapSound = new Audio('assets/audio/tap.mp3');
         tapSound.load();
 
         selectedQuestions.forEach((question, qIndex) => {
             console.log(`Processing question ${qIndex}:`, question);
 
-            // Проверяем структуру вопроса
             if (!question.question || !Array.isArray(question.options) || question.options.length === 0 || question.correct === undefined) {
                 console.warn(`Question at index ${qIndex} has invalid structure:`, question);
-                return; // Пропускаем некорректный вопрос
+                return;
             }
 
             const questionDiv = document.createElement('div');
@@ -160,8 +501,7 @@ async function initInteractivePage() {
                 optionBtn.className = 'quiz-option';
                 optionBtn.textContent = option;
                 optionBtn.addEventListener('click', () => {
-                    // Воспроизводим звук при выборе ответа
-                    tapSound.currentTime = 0; // Сбрасываем звук
+                    tapSound.currentTime = 0;
                     tapSound.play().catch(error => {
                         console.error('Failed to play tap sound:', error);
                     });
@@ -181,7 +521,6 @@ async function initInteractivePage() {
         }
 
         interactiveContainer.appendChild(quizContainer);
-        console.log('Quiz container appended to DOM');
 
         function handleQuizAnswer(questionIndex, selectedIndex, correctIndex, totalQuestions, explanation, callback) {
             console.log(`Quiz answer: question ${questionIndex}, selected ${selectedIndex}, correct ${correctIndex}`);
@@ -230,7 +569,6 @@ async function initInteractivePage() {
                 finishText.textContent = `Молодец, ты прошёл викторину! Твой результат: ${correctAnswers} из ${totalQuestions} правильных ответов!`;
                 resultDiv.appendChild(finishText);
 
-                // Воспроизводим звук победы
                 const celebrationSound = new Audio('assets/audio/celebration.mp3');
                 celebrationSound.play().catch(error => {
                     console.error('Failed to play celebration sound:', error);
@@ -271,10 +609,8 @@ async function initInteractivePage() {
         let secondCard = null;
         let lockBoard = false;
 
-        // Загружаем звук
         const tapSound = new Audio('assets/audio/tap.mp3');
         tapSound.load();
-        console.log('Tap sound loaded:', tapSound);
 
         pairs.forEach((pair, index) => {
             if (!pair.id || !pair.image) {
@@ -311,8 +647,7 @@ async function initInteractivePage() {
             card.addEventListener('click', () => {
                 if (lockBoard || card.classList.contains('open') || card.classList.contains('matched')) return;
 
-                // Воспроизводим звук при клике
-                tapSound.currentTime = 0; // Сбрасываем звук
+                tapSound.currentTime = 0;
                 tapSound.play().catch(error => {
                     console.error('Failed to play tap sound:', error);
                 });
@@ -348,7 +683,6 @@ async function initInteractivePage() {
                             <p>Поздравляем! Ты нашёл все пары!</p>
                         `;
 
-                        // Воспроизводим звук победы
                         const celebrationSound = new Audio('assets/audio/celebration.mp3');
                         celebrationSound.play().catch(error => {
                             console.error('Failed to play celebration sound:', error);
@@ -466,7 +800,7 @@ async function initInteractivePage() {
             img.src = character.mini;
             img.alt = `Персонаж ${character.id}`;
             img.onerror = () => {
-                Translator: console.warn(`Failed to load image: ${character.mini}`);
+                console.warn(`Failed to load image: ${character.mini}`);
                 img.src = 'assets/images/placeholder.jpg';
             };
             cellDiv.appendChild(img);
@@ -893,9 +1227,353 @@ async function initInteractivePage() {
             }
         }
     }
+
+    async function displayRiverCleanup(interactive, step) {
+        console.log('Displaying river cleanup game:', interactive, 'Step:', step);
+
+        if (!step.backgrounds || !step.items || !Array.isArray(step.items) || !step.masks) {
+            throw new Error('В интерактиве типа "river-cleanup" отсутствуют обязательные поля: backgrounds (с dirty и clean), items (массив), masks.');
+        }
+
+        const riverContainer = document.createElement('div');
+        riverContainer.className = 'river-container';
+
+        riverContainer.style.backgroundImage = `url('${step.backgrounds.dirty}')`;
+
+        interactiveContainer.appendChild(riverContainer);
+        await new Promise(resolve => {
+            const checkRender = () => {
+                if (riverContainer.clientWidth > 0 && riverContainer.clientHeight > 0) {
+                    resolve();
+                } else {
+                    requestAnimationFrame(checkRender);
+                }
+            };
+            requestAnimationFrame(checkRender);
+        });
+
+        const containerWidth = riverContainer.clientWidth;
+        const containerHeight = riverContainer.clientHeight;
+        console.log(`Container size: ${containerWidth}x${containerHeight}`);
+
+        if (Math.abs(containerWidth - containerHeight) > 1) {
+            console.warn(`Container is not square: ${containerWidth}x${containerHeight}`);
+        }
+
+        const baseSize = 600;
+        const scale = containerWidth / baseSize;
+        console.log(`Scale factor: ${scale}`);
+
+        const allItems = [];
+        step.items.forEach(item => {
+            if (!item.type || !item.image || !item.count || !item.placementMask) {
+                console.warn(`Item has invalid structure:`, item);
+                return;
+            }
+            if (!step.masks[item.placementMask]) {
+                console.warn(`Mask "${item.placementMask}" not found for item:`, item);
+                return;
+            }
+            for (let i = 0; i < item.count; i++) {
+                allItems.push({ ...item, uniqueId: `${item.type}-${i}` });
+            }
+        });
+
+        const trashCount = allItems.filter(item => item.type === 'trash').length;
+        const natureCount = allItems.filter(item => item.type === 'nature').length;
+        console.log(`Total items to place: ${allItems.length}, Trash: ${trashCount}, Nature: ${natureCount}`);
+
+        const shuffledItems = allItems.sort(() => Math.random() - 0.5);
+
+        let placedTrash = 0;
+        let placedNature = 0;
+
+        const tapSound = new Audio('assets/audio/tap.mp3');
+        tapSound.load();
+        const netSound = new Audio('assets/audio/net.mp3');
+        netSound.load();
+
+        const maskPositions = {};
+        const maskSizes = {};
+        const maskCanvases = {};
+        for (const maskType of Object.keys(step.masks)) {
+            const maskUrl = step.masks[maskType].dirty;
+            const positions = await loadMaskPositions(maskUrl);
+            maskPositions[maskType] = positions;
+
+            const img = new Image();
+            img.src = maskUrl;
+            await new Promise(resolve => {
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    maskCanvases[maskType] = canvas;
+                    maskSizes[maskType] = { width: img.width, height: img.height };
+                    resolve();
+                };
+                img.onerror = () => {
+                    console.error(`Failed to load mask for size detection: ${maskUrl}`);
+                    maskSizes[maskType] = { width: baseSize, height: baseSize };
+                    maskCanvases[maskType] = null;
+                    resolve();
+                };
+            });
+        }
+
+        const occupiedAreas = [];
+        const itemElements = [];
+
+        function isPixelWhite(maskType, x, y) {
+            const canvas = maskCanvases[maskType];
+            if (!canvas) return false;
+            if (x < 0 || x >= canvas.width || y < 0 || y >= canvas.height) {
+                console.log(`Coordinates out of bounds for mask ${maskType}: (${x}, ${y})`);
+                return false;
+            }
+            const ctx = canvas.getContext('2d');
+            const pixel = ctx.getImageData(Math.floor(x), Math.floor(y), 1, 1).data;
+            const r = pixel[0];
+            const g = pixel[1];
+            const b = pixel[2];
+            const isWhite = r === 255 && g === 255 && b === 255;
+            if (!isWhite) {
+                console.log(`Pixel at (${Math.floor(x)}, ${Math.floor(y)}) in mask ${maskType} is not white: r=${r}, g=${g}, b=${b}`);
+            }
+            return isWhite;
+        }
+
+        function isItemFullyInWhiteArea(maskType, maskX, maskY, itemSizeInMask) {
+            const halfSize = itemSizeInMask / 2;
+            const corners = [
+                { x: maskX - halfSize, y: maskY - halfSize },
+                { x: maskX + halfSize, y: maskY - halfSize },
+                { x: maskX - halfSize, y: maskY + halfSize },
+                { x: maskX + halfSize, y: maskY + halfSize },
+            ];
+
+            for (const corner of corners) {
+                if (!isPixelWhite(maskType, corner.x, corner.y)) {
+                    console.log(`Corner at (${corner.x}, ${corner.y}) in mask ${maskType} is not white`);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        for (const item of shuffledItems) {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'river-item';
+            itemDiv.setAttribute('data-type', item.type);
+            itemDiv.setAttribute('data-id', item.uniqueId);
+
+            const img = document.createElement('img');
+            img.src = item.image;
+            img.alt = item.type === 'trash' ? 'Мусор' : 'Природа';
+            img.onerror = () => {
+                console.warn(`Failed to load image: ${item.image}`);
+                img.src = 'assets/images/placeholder.jpg';
+            };
+            itemDiv.appendChild(img);
+
+            const availablePositions = maskPositions[item.placementMask];
+            if (!availablePositions || availablePositions.length === 0) {
+                console.warn(`No available positions for mask "${item.placementMask}"`);
+                continue;
+            }
+
+            const baseItemSize = 60;
+            const itemWidth = baseItemSize * scale;
+            const itemHeight = baseItemSize * scale;
+            itemDiv.style.width = `${itemWidth}px`;
+            itemDiv.style.height = `${itemHeight}px`;
+
+            const itemSizeInMask = baseItemSize;
+
+            let position = null;
+            let attempts = 0;
+            const maxAttempts = 100;
+            const maskSize = maskSizes[item.placementMask];
+            const maskWidth = maskSize.width;
+            const maskHeight = maskSize.height;
+
+            while (attempts < maxAttempts) {
+                const randomIndex = Math.floor(Math.random() * availablePositions.length);
+                const pos = availablePositions[randomIndex];
+                let posX = pos.x;
+                let posY = pos.y;
+
+                posX = (posX / maskWidth) * baseSize;
+                posY = (posY / maskHeight) * baseSize;
+
+                let percentX = (posX / baseSize) * 100;
+                let percentY = (posY / baseSize) * 100;
+
+                const adjustedX = Math.max(0, Math.min(percentX, 100 - (itemWidth / containerWidth) * 100));
+                const adjustedY = Math.max(0, Math.min(percentY, 100 - (itemHeight / containerHeight) * 100));
+
+                const maskX = (adjustedX / 100) * maskWidth;
+                const maskY = (adjustedY / 100) * maskHeight;
+
+                console.log(`Attempt ${attempts + 1} for ${item.uniqueId}: Checking position (${adjustedX}%, ${adjustedY}%) which maps to mask (${maskX}, ${maskY})`);
+
+                if (!isItemFullyInWhiteArea(item.placementMask, maskX, maskY, itemSizeInMask)) {
+                    attempts++;
+                    continue;
+                }
+
+                const itemRect = {
+                    left: posX - baseItemSize / 2,
+                    right: posX + baseItemSize / 2,
+                    top: posY - baseItemSize / 2,
+                    bottom: posY + baseItemSize / 2
+                };
+
+                const overlaps = occupiedAreas.some(area => {
+                    return !(
+                        itemRect.right < area.left ||
+                        itemRect.left > area.right ||
+                        itemRect.bottom < area.top ||
+                        itemRect.top > area.bottom
+                    );
+                });
+
+                if (!overlaps) {
+                    position = { x: adjustedX, y: adjustedY };
+                    occupiedAreas.push({
+                        left: posX - baseItemSize / 2,
+                        right: posX + baseItemSize / 2,
+                        top: posY - baseItemSize / 2,
+                        bottom: posY + baseItemSize / 2
+                    });
+                    break;
+                }
+
+                attempts++;
+            }
+
+            if (!position) {
+                console.warn(`Could not find a non-overlapping position for item within mask:`, item);
+                continue;
+            }
+
+            console.log(`Placing item ${item.uniqueId} at ${position.x}% x ${position.y}%`);
+            itemDiv.style.left = `${position.x}%`;
+            itemDiv.style.top = `${position.y}%`;
+
+            if (item.type === 'trash') {
+                placedTrash++;
+            } else if (item.type === 'nature') {
+                placedNature++;
+            }
+
+            itemDiv.addEventListener('click', () => {
+                if (itemDiv.classList.contains('removed')) return;
+
+                resetInactivityTimer();
+
+                if (item.type === 'trash') {
+                    tapSound.currentTime = 0;
+                    tapSound.play().catch(error => {
+                        console.error('Failed to play tap sound:', error);
+                    });
+                } else {
+                    netSound.currentTime = 0;
+                    netSound.play().catch(error => {
+                        console.error('Failed to play net sound:', error);
+                    });
+                }
+
+                if (item.type === 'trash') {
+                    itemDiv.classList.add('removed');
+                    trashRemoved++;
+                    console.log(`Trash removed: ${trashRemoved}/${totalTrash}`);
+
+                    if (trashRemoved === totalTrash) {
+                        clearTimeout(inactivityTimeout);
+
+                        riverContainer.style.backgroundImage = `url('${step.backgrounds.clean}')`;
+                        const resultDiv = document.createElement('div');
+                        resultDiv.className = 'river-result';
+                        resultDiv.innerHTML = `
+                            <p>Поздравляем! Река снова чистая!</p>
+                        `;
+
+                        if (step.sound) {
+                            const celebrationSound = new Audio(step.sound);
+                            celebrationSound.play().catch(error => {
+                                console.error('Failed to play celebration sound:', error);
+                            });
+                        }
+
+                        const buttonContainer = document.createElement('div');
+                        buttonContainer.className = 'result-buttons';
+
+                        const restartButton = document.createElement('button');
+                        restartButton.className = 'restart-button';
+                        restartButton.textContent = 'Играть ещё раз';
+                        restartButton.addEventListener('click', () => {
+                            window.location.reload();
+                        });
+                        buttonContainer.appendChild(restartButton);
+
+                        resultDiv.appendChild(buttonContainer);
+                        interactiveContainer.appendChild(resultDiv);
+                    }
+                } else {
+                    itemDiv.classList.add('incorrect');
+                }
+            });
+
+            riverContainer.appendChild(itemDiv);
+            itemElements.push(itemDiv);
+        }
+
+        const totalTrash = placedTrash;
+        let trashRemoved = 0;
+        console.log(`Placed items: Trash: ${placedTrash}, Nature: ${placedNature}, Total Trash to remove: ${totalTrash}`);
+
+        if (totalTrash === 0) {
+            console.warn('No trash items were placed! Game cannot be completed.');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'river-error';
+            errorDiv.innerHTML = `<p>Ошибка: не удалось разместить мусор. Проверьте маску и настройки.</p>`;
+            interactiveContainer.appendChild(errorDiv);
+            return;
+        }
+
+        if (riverContainer.children.length === 0) {
+            throw new Error('Не удалось отобразить игру "Помоги реке стать чистой": не удалось разместить элементы.');
+        }
+
+        let inactivityTimeout;
+        const inactivityDelay = 4000;
+
+        function startInactivityTimer() {
+            inactivityTimeout = setTimeout(() => {
+                itemElements.forEach(item => {
+                    if (item.getAttribute('data-type') === 'trash' && !item.classList.contains('removed')) {
+                        item.classList.add('wiggle');
+                    }
+                });
+            }, inactivityDelay);
+        }
+
+        function resetInactivityTimer() {
+            clearTimeout(inactivityTimeout);
+            itemElements.forEach(item => {
+                item.classList.remove('wiggle');
+            });
+            startInactivityTimer();
+        }
+
+        startInactivityTimer();
+
+        interactiveContainer.addEventListener('click', resetInactivityTimer);
+        interactiveContainer.addEventListener('touchstart', resetInactivityTimer);
+    }
 }
 
-// Запускаем инициализацию
-document.addEventListener('DOMContentLoaded', () => {
-    initInteractivePage();
-});
+document.addEventListener('DOMContentLoaded', initInteractivePage);

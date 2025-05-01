@@ -63,5 +63,11 @@
         <p>© 2025 Лесные Проказники. Все права защищены.</p>
     </footer>
     <script type="module" src="story.js"></script>
+    <script>
+        // Проверяем сохранённую тему при загрузке страницы
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-theme');
+        }
+    </script>
 </body>
 </html>

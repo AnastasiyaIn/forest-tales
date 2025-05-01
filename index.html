@@ -18,7 +18,7 @@
     <link rel="manifest" href="/manifest.json">
     <!-- Favicon для браузера -->
     <link rel="icon" href="/assets/icons/icon-192x192.png" type="image/png">
-    <!-- Стили для уведомления об установке -->
+    <!-- Стили для уведомления об установке и переключателя темы -->
     <style>
         .install-prompt {
             display: none;
@@ -50,6 +50,51 @@
         .install-prompt button:hover {
             background-color: #d4e0c2;
         }
+        /* Стили для переключателя темы */
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .theme-toggle label {
+            font-family: 'Nunito', sans-serif;
+            font-size: 16px;
+            color: #333;
+        }
+        body.dark-theme .theme-toggle label {
+            color: #e0e0e0;
+        }
+        .theme-toggle input[type="checkbox"] {
+            appearance: none;
+            width: 40px;
+            height: 20px;
+            background-color: #ccc;
+            border-radius: 20px;
+            position: relative;
+            cursor: pointer;
+            outline: none;
+        }
+        .theme-toggle input[type="checkbox"]::before {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background-color: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.2s;
+        }
+        .theme-toggle input[type="checkbox"]:checked {
+            background-color: #2e7d32;
+        }
+        body.dark-theme .theme-toggle input[type="checkbox"]:checked {
+            background-color: #4caf50;
+        }
+        .theme-toggle input[type="checkbox"]:checked::before {
+            transform: translateX(20px);
+        }
     </style>
     <!-- Firebase SDK для аналитики (подключаем как модуль) -->
     <script type="module">
@@ -74,6 +119,11 @@
     <div class="container">
         <header class="header">
             <h1>Лесные Проказники</h1>
+            <!-- Переключатель темы (чекбокс) -->
+            <div class="theme-toggle">
+                <label for="themeSwitch">Тёмная тема</label>
+                <input type="checkbox" id="themeSwitch">
+            </div>
         </header>
         
         <div class="book-info">
@@ -109,55 +159,68 @@
         <button onclick="installApp()">Установить</button>
         <button onclick="dismissPrompt()">Позже</button>
     </div>
-    <!-- Регистрация Service Worker для PWA и уведомление об установке -->
+    <!-- Регистрация Service Worker и логика переключения темы -->
     <script>
-        // Регистрация Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(registration => console.log('Service Worker registered:', registration))
-                    .catch(error => console.error('Service Worker registration failed:', error));
-            });
-        }
+        // Регистрация Service Worker (закомментировано для локального тестирования)
+        // if ('serviceWorker' in navigator) {
+        //     window.addEventListener('load', () => {
+        //         navigator.serviceWorker.register('/sw.js')
+        //             .then(registration => console.log('Service Worker registered:', registration))
+        //             .catch(error => console.error('Service Worker registration failed:', error));
+        //     });
+        // }
 
         // Логика уведомления об установке
         let deferredPrompt;
         const installPrompt = document.getElementById('installPrompt');
 
         window.addEventListener('beforeinstallprompt', (e) => {
-            // Предотвращаем автоматическое открытие браузером
             e.preventDefault();
-            // Сохраняем событие, чтобы вызвать его позже
             deferredPrompt = e;
-            // Показываем уведомление
             installPrompt.style.display = 'block';
         });
 
         window.installApp = function() {
-            // Показываем системное окно установки
             deferredPrompt.prompt();
-            // Ждём, что выберет пользователь
             deferredPrompt.userChoice.then((choiceResult) => {
                 if (choiceResult.outcome === 'accepted') {
                     console.log('Пользователь установил приложение');
                 } else {
                     console.log('Пользователь отказался от установки');
                 }
-                // Сбрасываем событие и скрываем уведомление
                 deferredPrompt = null;
                 installPrompt.style.display = 'none';
             });
         };
 
         window.dismissPrompt = function() {
-            // Скрываем уведомление, если пользователь нажал "Позже"
             installPrompt.style.display = 'none';
         };
 
-        // Скрываем уведомление, если приложение уже установлено
         window.addEventListener('appinstalled', () => {
             installPrompt.style.display = 'none';
             console.log('Приложение было установлено');
+        });
+
+        // Логика переключения темы
+        const themeSwitch = document.getElementById('themeSwitch');
+        const body = document.body;
+
+        // Проверяем сохранённую тему при загрузке страницы
+        if (localStorage.getItem('theme') === 'dark') {
+            body.classList.add('dark-theme');
+            themeSwitch.checked = true;
+        }
+
+        // Переключаем тему при клике
+        themeSwitch.addEventListener('change', () => {
+            if (themeSwitch.checked) {
+                body.classList.add('dark-theme');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.classList.remove('dark-theme');
+                localStorage.setItem('theme', 'light');
+            }
         });
     </script>
 </body>
