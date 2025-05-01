@@ -62,52 +62,53 @@ async function displayMaze(interactive, step, interactiveContainer, storyIndex, 
     const mazeContainer = document.createElement('div');
     mazeContainer.className = 'maze-container';
 
-    // Описание
     const description = document.createElement('p');
     description.className = 'interactive-description';
     mazeContainer.appendChild(description);
 
-    // Получаем уровень из URL
     const urlParams = new URLSearchParams(window.location.search);
     const levelIndex = parseInt(urlParams.get('level')) || 0;
     const selectedLevel = step.levels[Math.min(levelIndex, step.levels.length - 1)];
 
-    // Проверяем структуру уровня
     if (!selectedLevel.rows || !selectedLevel.cols || !selectedLevel.layout || !selectedLevel.start || !selectedLevel.end) {
         throw new Error('В уровне лабиринта отсутствуют обязательные поля: rows, cols, layout, start, end.');
     }
 
-    // Обновляем описание
     const totalLevels = step.levels.length;
     function updateDescription() {
         description.textContent = `Помоги зверьку найти сундук! Уровень ${levelIndex + 1}/${totalLevels}`;
     }
     updateDescription();
 
-    // Создаём сетку лабиринта
     const mazeGrid = document.createElement('div');
     mazeGrid.className = 'maze-grid';
-    // Проверяем, что mazeGrid существует перед установкой стилей
-    if (mazeGrid) {
-        mazeGrid.style.gridTemplateRows = `repeat(${selectedLevel.rows}, 60px)`; // Фиксируем размер клеток
-        mazeGrid.style.gridTemplateColumns = `repeat(${selectedLevel.cols}, 60px)`;
-    } else {
-        console.error('Failed to create mazeGrid element');
-        return;
-    }
 
-    // Текущая позиция персонажа
+    await new Promise(resolve => {
+        const checkRender = () => {
+            if (mazeContainer.clientWidth > 0) {
+                resolve();
+            } else {
+                requestAnimationFrame(checkRender);
+            }
+        };
+        mazeContainer.appendChild(mazeGrid);
+        interactiveContainer.appendChild(mazeContainer);
+        requestAnimationFrame(checkRender);
+    });
+
+    const containerWidth = mazeContainer.clientWidth;
+    const cellSize = Math.min(containerWidth / selectedLevel.cols, 60);
+    mazeGrid.style.gridTemplateRows = `repeat(${selectedLevel.rows}, ${cellSize}px)`;
+    mazeGrid.style.gridTemplateColumns = `repeat(${selectedLevel.cols}, ${cellSize}px)`;
+
     let playerPosition = { row: selectedLevel.start.row, col: selectedLevel.start.col };
     let playerElement = null;
 
-    // Копия layout для безопасного изменения
     const layoutCopy = JSON.parse(JSON.stringify(selectedLevel.layout));
 
-    // Обрабатываем препятствия из selectedLevel.obstacles
     if (selectedLevel.obstacles && Array.isArray(selectedLevel.obstacles)) {
         selectedLevel.obstacles.forEach(obstacle => {
             const { row, col } = obstacle;
-            // Проверяем корректность данных
             if (row === undefined || col === undefined) {
                 console.warn(`Недопустимые данные препятствия:`, obstacle);
                 return;
@@ -116,12 +117,10 @@ async function displayMaze(interactive, step, interactiveContainer, storyIndex, 
                 console.warn(`Позиция препятствия выходит за границы: row=${row}, col=${col}`);
                 return;
             }
-            // Обновляем layoutCopy
             layoutCopy[row][col] = 1;
         });
     }
 
-    // Заполняем сетку
     for (let row = 0; row < selectedLevel.rows; row++) {
         for (let col = 0; col < selectedLevel.cols; col++) {
             const cell = document.createElement('div');
@@ -129,7 +128,6 @@ async function displayMaze(interactive, step, interactiveContainer, storyIndex, 
             cell.setAttribute('data-row', row);
             cell.setAttribute('data-col', col);
 
-            // Проверяем, что layout корректен
             if (!layoutCopy[row] || layoutCopy[row][col] === undefined) {
                 throw new Error(`Некорректный layout в уровне ${levelIndex}: отсутствует строка ${row} или столбец ${col}.`);
             }
@@ -137,10 +135,7 @@ async function displayMaze(interactive, step, interactiveContainer, storyIndex, 
             const cellType = layoutCopy[row][col];
 
             if (cellType === 1) {
-                // Стена или препятствие
                 cell.classList.add('wall');
-
-                // Выбираем изображение: чередуем wallImage и secondaryWallImage для всех клеток с cellType === 1
                 const wallImage = Math.random() < 0.5 && selectedLevel.secondaryWallImage
                     ? selectedLevel.secondaryWallImage
                     : (selectedLevel.wallImage || 'assets/images/wall1.png');
@@ -154,7 +149,6 @@ async function displayMaze(interactive, step, interactiveContainer, storyIndex, 
                 };
                 cell.appendChild(img);
             } else {
-                // Путь
                 cell.classList.add('path');
                 if (selectedLevel.pathImage) {
                     const img = document.createElement('img');
@@ -167,7 +161,6 @@ async function displayMaze(interactive, step, interactiveContainer, storyIndex, 
                     cell.appendChild(img);
                 }
 
-                // Стартовая позиция
                 if (row === selectedLevel.start.row && col === selectedLevel.start.col) {
                     playerElement = document.createElement('div');
                     playerElement.className = 'maze-player';
@@ -182,7 +175,6 @@ async function displayMaze(interactive, step, interactiveContainer, storyIndex, 
                     cell.appendChild(playerElement);
                 }
 
-                // Финиш
                 if (row === selectedLevel.end.row && col === selectedLevel.end.col) {
                     cell.classList.add('end');
                     if (selectedLevel.endImage) {
@@ -201,10 +193,36 @@ async function displayMaze(interactive, step, interactiveContainer, storyIndex, 
         }
     }
 
-    mazeContainer.appendChild(mazeGrid);
-    interactiveContainer.appendChild(mazeContainer);
+    const controlsDiv = document.createElement('div');
+    controlsDiv.className = 'maze-controls';
 
-    // Управление персонажем
+    const moveUpBtn = document.createElement('button');
+    moveUpBtn.id = 'move-up';
+    moveUpBtn.innerHTML = '↑';
+    moveUpBtn.addEventListener('click', () => movePlayer('up'));
+
+    const moveLeftBtn = document.createElement('button');
+    moveLeftBtn.id = 'move-left';
+    moveLeftBtn.innerHTML = '←';
+    moveLeftBtn.addEventListener('click', () => movePlayer('left'));
+
+    const moveRightBtn = document.createElement('button');
+    moveRightBtn.id = 'move-right';
+    moveRightBtn.innerHTML = '→';
+    moveRightBtn.addEventListener('click', () => movePlayer('right'));
+
+    const moveDownBtn = document.createElement('button');
+    moveDownBtn.id = 'move-down';
+    moveDownBtn.innerHTML = '↓';
+    moveDownBtn.addEventListener('click', () => movePlayer('down'));
+
+    controlsDiv.appendChild(moveUpBtn);
+    controlsDiv.appendChild(moveLeftBtn);
+    controlsDiv.appendChild(moveRightBtn);
+    controlsDiv.appendChild(moveDownBtn);
+
+    mazeContainer.appendChild(controlsDiv);
+
     function movePlayer(direction) {
         let newRow = playerPosition.row;
         let newCol = playerPosition.col;
@@ -226,14 +244,12 @@ async function displayMaze(interactive, step, interactiveContainer, storyIndex, 
                 return;
         }
 
-        // Проверяем, не выходит ли новая позиция за пределы сетки
         if (newRow < 0 || newRow >= selectedLevel.rows || newCol < 0 || newCol >= selectedLevel.cols) {
             const bumpSound = new Audio('assets/audio/bump.mp3');
             bumpSound.play().catch(error => console.error('Failed to play bump sound:', error));
             return;
         }
 
-        // Проверяем, не стена ли на новой позиции (используем layoutCopy)
         console.log(`Проверка движения на (${newRow}, ${newCol}): layoutCopy[${newRow}][${newCol}] = ${layoutCopy[newRow][newCol]}`);
         if (layoutCopy[newRow][newCol] === 1) {
             console.log('Обнаружена стена, движение заблокировано.');
@@ -242,15 +258,12 @@ async function displayMaze(interactive, step, interactiveContainer, storyIndex, 
             return;
         }
 
-        // Проигрываем звук шага
         const stepSound = new Audio('assets/audio/step.mp3');
         stepSound.play().catch(error => console.error('Failed to play step sound:', error));
 
-        // Обновляем позицию
         playerPosition.row = newRow;
         playerPosition.col = newCol;
 
-        // Перемещаем персонажа в DOM
         const newCell = mazeGrid.querySelector(`.maze-cell[data-row="${newRow}"][data-col="${newCol}"]`);
         if (newCell && playerElement) {
             newCell.appendChild(playerElement);
@@ -259,7 +272,6 @@ async function displayMaze(interactive, step, interactiveContainer, storyIndex, 
             return;
         }
 
-        // Проверяем победу
         if (playerPosition.row === selectedLevel.end.row && playerPosition.col === selectedLevel.end.col) {
             const resultDiv = document.createElement('div');
             resultDiv.className = 'maze-result';
@@ -274,12 +286,10 @@ async function displayMaze(interactive, step, interactiveContainer, storyIndex, 
             buttonContainer.className = 'result-buttons';
 
             if (levelIndex + 1 < step.levels.length) {
-                // Переход на следующий уровень
                 setTimeout(() => {
                     window.location.href = `interactive.html?story=${storyIndex}&interactive=${interactiveId}&level=${levelIndex + 1}`;
                 }, 2000);
             } else {
-                // Последний уровень — кнопка "Играть ещё раз"
                 const restartButton = document.createElement('button');
                 restartButton.className = 'restart-button';
                 restartButton.textContent = 'Играть ещё раз';
@@ -294,7 +304,6 @@ async function displayMaze(interactive, step, interactiveContainer, storyIndex, 
         }
     }
 
-    // Управление клавишами
     document.addEventListener('keydown', (e) => {
         switch (e.key) {
             case 'ArrowUp':
@@ -315,44 +324,8 @@ async function displayMaze(interactive, step, interactiveContainer, storyIndex, 
                 break;
         }
     });
-
-    // Управление свайпами (для мобильных устройств)
-    let touchStartX = 0;
-    let touchStartY = 0;
-
-    mazeContainer.addEventListener('touchstart', (e) => {
-        if (e.touches.length !== 1) return;
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
-    }, { passive: false });
-
-    mazeContainer.addEventListener('touchend', (e) => {
-        if (!e.changedTouches || e.changedTouches.length !== 1) return;
-        const touchEndX = e.changedTouches[0].clientX;
-        const touchEndY = e.changedTouches[0].clientY;
-
-        const deltaX = touchEndX - touchStartX;
-        const deltaY = touchEndY - touchStartY;
-
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-            // Горизонтальный свайп
-            if (deltaX > 50) {
-                movePlayer('right');
-            } else if (deltaX < -50) {
-                movePlayer('left');
-            }
-        } else {
-            // Вертикальный свайп
-            if (deltaY > 50) {
-                movePlayer('down');
-            } else if (deltaY < -50) {
-                movePlayer('up');
-            }
-        }
-    }, { passive: false });
 }
 
-// Основная функция инициализации
 async function initInteractivePage() {
     console.log('DOM loaded, initializing interactive page...');
 
@@ -407,7 +380,6 @@ async function initInteractivePage() {
         const interactive = data.interactives[interactiveId];
         console.log('Loaded interactive data:', interactive);
 
-        // Устанавливаем заголовки и описания на русском
         if (interactive.type === 'quiz') {
             interactiveTitleElement.textContent = 'Викторина: ответь правильно на вопросы';
         } else if (interactive.type === 'match') {
@@ -743,19 +715,16 @@ async function initInteractivePage() {
         const evolutionContainer = document.createElement('div');
         evolutionContainer.className = 'evolution-container';
 
-        // Создаём описание с указанием уровня
         const description = document.createElement('p');
         description.className = 'interactive-description';
         evolutionContainer.appendChild(description);
 
-        // Создаём контейнеры для маленьких и взрослых героев
         const miniGrid = document.createElement('div');
         miniGrid.className = 'evolution-grid mini-grid';
 
         const adultGrid = document.createElement('div');
         adultGrid.className = 'evolution-grid adult-grid';
 
-        // Выбираем уровень на основе параметра URL
         const urlParams = new URLSearchParams(window.location.search);
         const levelIndex = parseInt(urlParams.get('level')) || 0;
         const selectedLevel = step.levels[Math.min(levelIndex, step.levels.length - 1)];
@@ -764,10 +733,8 @@ async function initInteractivePage() {
             throw new Error('В интерактиве типа "evolution" отсутствует или некорректно поле "steps[0].levels[-1].characters". Ожидается массив персонажей с полями id, mini, adult и count.');
         }
 
-        // Устанавливаем атрибут data-level для управления расположением карточек
         miniGrid.setAttribute('data-level', levelIndex);
 
-        // Обновляем описание с уровнем
         const totalLevels = step.levels.length;
         function updateDescription() {
             description.textContent = `Объедини одинаковых героев, чтобы они выросли! Уровень ${levelIndex + 1}/${totalLevels}`;
@@ -777,7 +744,6 @@ async function initInteractivePage() {
         const cells = [];
         const selectedCharacters = {};
 
-        // Собираем все клетки для проверки проходимости
         const allCharacters = [];
         selectedLevel.characters.forEach(character => {
             if (!character.id || !character.mini || !character.adult || !character.count) {
@@ -789,7 +755,6 @@ async function initInteractivePage() {
             }
         });
 
-        // Проверяем проходимость расклада
         const characterCounts = {};
         allCharacters.forEach(char => {
             characterCounts[char.id] = (characterCounts[char.id] || 0) + 1;
@@ -799,7 +764,6 @@ async function initInteractivePage() {
             throw new Error('Расклад непроходим: количество героев каждого типа должно быть чётным.');
         }
 
-        // Перемешиваем героев
         const shuffledCharacters = allCharacters.sort(() => Math.random() - 0.5);
 
         shuffledCharacters.forEach(character => {
@@ -820,12 +784,10 @@ async function initInteractivePage() {
             cellDiv.addEventListener('click', () => {
                 if (cellDiv.classList.contains('evolving') || cellDiv.classList.contains('hidden')) return;
 
-                // Проверяем, не была ли эта карточка уже выбрана
                 selectedCharacters[character.id] = selectedCharacters[character.id] || [];
                 const alreadySelected = selectedCharacters[character.id].some(cell => cell.getAttribute('data-cell-id') === character.uniqueId);
-                if (alreadySelected) return; // Игнорируем повторный клик по той же карточке
+                if (alreadySelected) return;
 
-                // Добавляем подсветку выбранной карточки
                 cellDiv.classList.add('selected');
                 selectedCharacters[character.id].push(cellDiv);
 
@@ -835,11 +797,9 @@ async function initInteractivePage() {
                     firstCell.classList.add('evolving');
                     secondCell.classList.add('evolving');
 
-                    // Убираем подсветку перед анимацией
                     firstCell.classList.remove('selected');
                     secondCell.classList.remove('selected');
 
-                    // Воспроизводим звук
                     if (step.sound) {
                         const audio = new Audio(step.sound);
                         audio.play().catch(err => console.warn('Failed to play audio:', err));
@@ -862,7 +822,6 @@ async function initInteractivePage() {
                         };
                         adultCell.appendChild(adultImg);
 
-                        // Добавляем анимацию появления
                         adultCell.classList.add('appear');
 
                         adultGrid.appendChild(adultCell);
@@ -880,7 +839,6 @@ async function initInteractivePage() {
                                 <p>Поздравляем! Все герои выросли!</p>
                             `;
 
-                            // Добавляем звук победы на последнем уровне
                             if (levelIndex + 1 === step.levels.length) {
                                 const celebrationSound = new Audio('assets/audio/celebration.mp3');
                                 celebrationSound.play().catch(error => {
@@ -891,13 +849,11 @@ async function initInteractivePage() {
                             const buttonContainer = document.createElement('div');
                             buttonContainer.className = 'result-buttons';
 
-                            // Если это не последний уровень, переходим автоматически
                             if (levelIndex + 1 < step.levels.length) {
                                 setTimeout(() => {
                                     window.location.href = `interactive.html?story=${storyIndex}&interactive=${interactiveId}&level=${levelIndex + 1}`;
                                 }, 2000);
                             } else {
-                                // На последнем уровне показываем кнопку "Играть ещё раз"
                                 const restartButton = document.createElement('button');
                                 restartButton.className = 'restart-button';
                                 restartButton.textContent = 'Играть ещё раз';
@@ -912,7 +868,6 @@ async function initInteractivePage() {
                         }
                     }, 1000);
 
-                    // Улучшенный эффект с частицами
                     const particles = document.createElement('div');
                     particles.className = 'particles';
                     for (let i = 0; i < 20; i++) {
@@ -948,7 +903,6 @@ async function initInteractivePage() {
             throw new Error('В интерактиве типа "puzzle" отсутствуют обязательные поля: images (массив), rows, cols.');
         }
 
-        // Получаем imageIndex из URL или используем 0 по умолчанию
         const urlParams = new URLSearchParams(window.location.search);
         let imageIndex = parseInt(urlParams.get('imageIndex')) || 0;
         if (isNaN(imageIndex) || imageIndex < 0 || imageIndex >= step.images.length) {
@@ -959,33 +913,27 @@ async function initInteractivePage() {
         const puzzleContainer = document.createElement('div');
         puzzleContainer.className = 'puzzle-container';
 
-        // Создаём область для кусочков
         const piecesContainer = document.createElement('div');
         piecesContainer.className = 'puzzle-pieces';
 
-        // Создаём сетку для пазла
         const puzzleGrid = document.createElement('div');
         puzzleGrid.className = 'puzzle-grid';
-        puzzleGrid.style.gridTemplateRows = `repeat(${step.rows}, 1fr)`;
-        puzzleGrid.style.gridTemplateColumns = `repeat(${step.cols}, 1fr)`;
+        const pieceSize = 100;
+        puzzleGrid.style.gridTemplateRows = `repeat(${step.rows}, ${pieceSize}px)`;
+        puzzleGrid.style.gridTemplateColumns = `repeat(${step.cols}, ${pieceSize}px)`;
 
         const totalPieces = step.rows * step.cols;
-
-        // Размер кусочка фиксирован в CSS (100px)
-        const pieceSize = 100;
-        const gridWidth = pieceSize * step.cols; // Ширина сетки = размер кусочка * количество колонок
+        const gridWidth = pieceSize * step.cols;
 
         const pieces = [];
         const correctPositions = {};
 
-        // Создаём ячейки сетки
         for (let i = 0; i < totalPieces; i++) {
             const cell = document.createElement('div');
             cell.className = 'puzzle-cell';
             cell.setAttribute('data-index', i);
             cell.setAttribute('droppable', 'true');
 
-            // Десктоп: Поддержка drag and drop
             cell.addEventListener('dragover', (e) => {
                 e.preventDefault();
             });
@@ -1016,7 +964,6 @@ async function initInteractivePage() {
             correctPositions[i] = i;
         }
 
-        // Делаем область piecesContainer целью для возврата кусочков
         piecesContainer.addEventListener('dragover', (e) => {
             e.preventDefault();
         });
@@ -1050,7 +997,6 @@ async function initInteractivePage() {
             }
         }, { passive: false });
 
-        // Создаём кусочки пазла
         for (let row = 0; row < step.rows; row++) {
             for (let col = 0; col < step.cols; col++) {
                 const index = row * step.cols + col;
@@ -1066,7 +1012,6 @@ async function initInteractivePage() {
                 piece.style.backgroundPosition = `-${col * pieceSize}px -${row * pieceSize}px`;
                 piece.setAttribute('data-correct-index', index);
 
-                // Десктоп: Drag events
                 piece.addEventListener('dragstart', (e) => {
                     e.dataTransfer.setData('text/plain', piece.id);
                     piece.classList.add('dragging');
@@ -1076,7 +1021,6 @@ async function initInteractivePage() {
                     piece.classList.remove('dragging');
                 });
 
-                // Мобильные устройства: Touch events
                 piece.addEventListener('touchstart', (e) => {
                     e.preventDefault();
                     if (!e.touches || e.touches.length === 0) {
@@ -1085,7 +1029,6 @@ async function initInteractivePage() {
                     const touchPiece = piece;
                     touchPiece.classList.add('dragging');
 
-                    // Отключаем скроллинг на время перетаскивания
                     document.body.style.overflow = 'hidden';
 
                     const touch = e.touches[0];
@@ -1093,13 +1036,12 @@ async function initInteractivePage() {
                     const startX = touch.clientX - rect.left;
                     const startY = touch.clientY - rect.top;
 
-                    // Перемещаем сам кусочек
                     touchPiece.style.position = 'fixed';
                     touchPiece.style.zIndex = '1000';
                     touchPiece.style.opacity = '0.8';
                     touchPiece.style.left = `${touch.clientX - startX}px`;
                     touchPiece.style.top = `${touch.clientY - startY}px`;
-                    document.body.appendChild(touchPiece); // Перемещаем кусочек в body
+                    document.body.appendChild(touchPiece);
 
                     let lastTouchX = touch.clientX;
                     let lastTouchY = touch.clientY;
@@ -1122,17 +1064,14 @@ async function initInteractivePage() {
                         touchPiece.classList.remove('dragging');
                         document.removeEventListener('touchmove', moveHandler);
                         document.removeEventListener('touchend', endHandler);
-                        document.body.style.overflow = ''; // Восстанавливаем скроллинг
+                        document.body.style.overflow = '';
 
-                        // Получаем текущие координаты кусочка
                         const pieceRect = touchPiece.getBoundingClientRect();
-
-                        // Ищем ячейку, с которой кусочек пересекается
                         const cells = puzzleGrid.querySelectorAll('.puzzle-cell');
                         let targetCell = null;
 
                         cells.forEach(cell => {
-                            if (cell.hasChildNodes()) return; // Пропускаем занятую ячейку
+                            if (cell.hasChildNodes()) return;
                             const cellRect = cell.getBoundingClientRect();
                             const intersects = !(
                                 pieceRect.right < cellRect.left ||
@@ -1163,7 +1102,6 @@ async function initInteractivePage() {
                             piecesContainer.appendChild(touchPiece);
                         }
 
-                        // Сбрасываем стили position
                         touchPiece.style.position = '';
                         touchPiece.style.left = '';
                         touchPiece.style.top = '';
@@ -1178,11 +1116,9 @@ async function initInteractivePage() {
             }
         }
 
-        // Перемешиваем кусочки только один раз при инициализации
         const shuffledPieces = [...pieces].sort(() => Math.random() - 0.5);
         shuffledPieces.forEach(piece => piecesContainer.appendChild(piece));
 
-        // Сначала добавляем puzzleGrid, затем piecesContainer
         puzzleContainer.appendChild(puzzleGrid);
         puzzleContainer.appendChild(piecesContainer);
         interactiveContainer.appendChild(puzzleContainer);
@@ -1227,7 +1163,6 @@ async function initInteractivePage() {
                 const restartButton = document.createElement('button');
                 restartButton.className = 'restart-button';
                 restartButton.textContent = 'Играть ещё раз';
-                // Переходим к следующей картинке
                 const nextImageIndex = (imageIndex + 1) % step.images.length;
                 restartButton.addEventListener('click', () => {
                     window.location.href = `interactive.html?story=${storyIndex}&interactive=${interactiveId}&imageIndex=${nextImageIndex}`;
@@ -1588,4 +1523,4 @@ async function initInteractivePage() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', initInteractivePage);
+document.addEventListener('DOMContentLoaded', initInteractivePage); 
