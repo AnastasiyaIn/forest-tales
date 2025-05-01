@@ -175,7 +175,7 @@ body.dark-theme .nav-btn:disabled {
     margin: 20px 0;
 }
 
-/* Иконки для кноп [иконки для кнопок навигации]
+/* Иконки для кнопок навигации */
 .nav-icon {
     display: inline-block;
     width: 16px;
@@ -553,6 +553,14 @@ body.dark-theme .quiz-option.incorrect {
     font-weight: 400;
 }
 
+.quiz-result p:first-child {
+    color: #2e7d32;
+}
+
+body.dark-theme .quiz-result p:first-child {
+    color: #8bc34a;
+}
+
 .next-button {
     background-color: #2e7d32;
     color: white;
@@ -562,7 +570,7 @@ body.dark-theme .quiz-option.incorrect {
     cursor: pointer;
     font-size: 1rem;
     font-weight: 700;
-    margin-top:  conoscenze10px;
+    margin-top: 10px;
     transition: background-color 0.3s ease, transform 0.3s ease;
 }
 
@@ -602,15 +610,13 @@ body.dark-theme .next-button:hover {
     transition: transform 0.6s;
 }
 
-.match-card.open .match-card-inner {
-    transform: rotateY(180deg);
-}
-
+.match-card.open .match-card-inner,
 .match-card.matched .match-card-inner {
     transform: rotateY(180deg);
 }
 
-.match-card-front, .match-card-back {
+.match-card-front,
+.match-card-back {
     position: absolute;
     width: 100%;
     height: 100%;
@@ -639,6 +645,16 @@ body.dark-theme .next-button:hover {
     margin-top: 20px;
 }
 
+.match-result p {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #2e7d32;
+}
+
+body.dark-theme .match-result p {
+    color: #8bc34a;
+}
+
 .evolution-container {
     text-align: center;
 }
@@ -648,6 +664,10 @@ body.dark-theme .next-button:hover {
     font-weight: 400;
     margin-bottom: 20px;
     text-align: center;
+}
+
+body.dark-theme .interactive-description {
+    color: #b0b0b0;
 }
 
 .evolution-grid {
@@ -764,6 +784,16 @@ body.dark-theme .evolution-cell.adult {
 .evolution-result {
     text-align: center;
     margin-top: 20px;
+}
+
+.evolution-result p {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #2e7d32;
+}
+
+body.dark-theme .evolution-result p {
+    color: #8bc34a;
 }
 
 .congratulations {
@@ -955,6 +985,16 @@ body.dark-theme .puzzle-piece {
     margin-top: 20px;
 }
 
+.puzzle-result p {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #2e7d32;
+}
+
+body.dark-theme .puzzle-result p {
+    color: #8bc34a;
+}
+
 /* Стили для футера */
 .footer {
     text-align: center;
@@ -1037,8 +1077,20 @@ body.dark-theme .river-container {
     animation: shake 0.5s ease;
 }
 
+@keyframes shake {
+    0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+    25% { transform: translate(-50%, -50%) rotate(-5deg); }
+    75% { transform: translate(-50%, -50%) rotate(5deg); }
+}
+
 .river-item.wiggle {
-    animation: wiggle 0.5s ease-in-out infinite;
+    animation: wiggle 1s infinite;
+}
+
+@keyframes wiggle {
+    0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+    25% { transform: translate(-50%, -50%) rotate(-3deg); }
+    75% { transform: translate(-50%, -50%) rotate(3deg); }
 }
 
 .river-result {
@@ -1046,31 +1098,39 @@ body.dark-theme .river-container {
     margin-top: 20px;
 }
 
-@keyframes shake {
-    0% { transform: translateX(0); }
-    25% { transform: translateX(-10px); }
-    50% { transform: translateX(10px); }
-    75% { transform: translateX(-10px); }
-    100% { transform: translateX(0); }
+.river-result p {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #2e7d32;
 }
 
-@keyframes wiggle {
-    0% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    50% { transform: translateX(5px); }
-    75% { transform: translateX(-5px); }
-    100% { transform: translateX(0); }
+body.dark-theme .river-result p {
+    color: #8bc34a;
+}
+
+.river-error {
+    text-align: center;
+    margin-top: 20px;
+    color: #d9534f;
+}
+
+body.dark-theme .river-error {
+    color: #ef5350;
 }
 
 /* Стили для лабиринта */
 .maze-container {
-    max-width: 600px;
+    max-width: 100%;
     margin: 0 auto;
+    padding: 0 10px;
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .maze-grid {
-    display: inline-grid;
+    display: grid;
     gap: 0;
     border: 2px solid #2e7d32;
     border-radius: 8px;
@@ -1088,7 +1148,9 @@ body.dark-theme .maze-grid {
     height: 60px;
     position: relative;
     box-sizing: border-box;
-    overflow: hidden; /* Чтобы изображения не вылезали за границы */
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
 }
 
 .maze-cell img {
@@ -1098,6 +1160,8 @@ body.dark-theme .maze-grid {
     position: absolute;
     top: 0;
     left: 0;
+    margin: 0;
+    padding: 0;
 }
 
 .maze-cell.wall {
@@ -1150,6 +1214,11 @@ body.dark-theme .maze-cell.path {
 
 .maze-cell.end {
     position: relative;
+    background-color: #a5d6a7;
+}
+
+body.dark-theme .maze-cell.end {
+    background-color: #66bb6a;
 }
 
 .maze-cell.end img {
@@ -1166,6 +1235,77 @@ body.dark-theme .maze-cell.path {
 .maze-result p {
     font-size: 1.2rem;
     font-weight: 400;
+    color: #2e7d32;
+}
+
+body.dark-theme .maze-result p {
+    color: #8bc34a;
+}
+
+/* Стили для кнопок управления лабиринтом */
+.maze-controls {
+    display: grid;
+    grid-template-areas:
+        ". up ."
+        "left . right"
+        ". down .";
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+#move-up {
+    grid-area: up;
+}
+
+#move-left {
+    grid-area: left;
+}
+
+#move-right {
+    grid-area: right;
+}
+
+#move-down {
+    grid-area: down;
+}
+
+.maze-controls button {
+    background-color: #2e7d32;
+    color: white;
+    width: 50px;
+    height: 50px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+}
+
+body.dark-theme .maze-controls button {
+    background-color: #4caf50;
+}
+
+.maze-controls button:hover {
+    background-color: #1b5e20;
+    transform: scale(1.1);
+}
+
+body.dark-theme .maze-controls button:hover {
+    background-color: #388e3c;
+}
+
+.maze-controls button:active {
+    transform: scale(0.95);
+}
+
+.maze-controls button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+body.dark-theme .maze-controls button:disabled {
+    background-color: #555;
 }
 
 /* Адаптация для мобильных устройств */
@@ -1173,6 +1313,18 @@ body.dark-theme .maze-cell.path {
     .container, .story-container {
         padding: 10px;
         max-width: 100%;
+    }
+
+    .header h1 {
+        font-size: 2rem;
+    }
+
+    #interactive-title {
+        font-size: 1.5rem;
+    }
+
+    .subtitle {
+        font-size: 1.2rem;
     }
 
     .cover-image {
@@ -1213,6 +1365,26 @@ body.dark-theme .maze-cell.path {
 
     .read-text {
         font-size: 0.8rem;
+    }
+
+    .match-container {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    }
+
+    .evolution-grid.mini-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .evolution-grid.mini-grid[data-level="0"] {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .evolution-grid.mini-grid[data-level="1"] {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .evolution-grid.adult-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 
     .puzzle-container {
@@ -1319,6 +1491,10 @@ body.dark-theme .maze-cell.path {
         100% { transform: scale(1); }
     }
 
+    .river-container {
+        max-width: 400px;
+    }
+
     /* Адаптация лабиринта для мобильных */
     .maze-container {
         max-width: 100%;
@@ -1366,5 +1542,52 @@ body.dark-theme .maze-cell.path {
     .maze-cell.end img {
         width: 100%;
         height: 100%;
+    }
+
+    .maze-controls button {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+    }
+}
+
+@media (max-width: 400px) {
+    .container, .story-container {
+        padding: 15px;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .start-button, .support-button, .back-button, .read-button, .nav-btn {
+        width: 100%;
+        padding: 12px;
+    }
+
+    .match-container {
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    }
+
+    .evolution-grid.mini-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .evolution-grid.adult-grid {
+        grid-template-columns: repeat(1, 1fr);
+    }
+
+    .puzzle-grid {
+        max-width: 250px;
+    }
+
+    .puzzle-piece {
+        width: 60px !important;
+        height: 60px !important;
+    }
+
+    .river-container {
+        max-width: 300px;
     }
 }

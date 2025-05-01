@@ -17,7 +17,7 @@
     <!-- Подключаем manifest.json для PWA -->
     <link rel="manifest" href="/manifest.json">
     <!-- Favicon для браузера -->
-    <link rel="icon" href="/assets/icons/icon-192x192.png" type="image/png">
+    <link rel="icon" href="/assets/icons/icon-192x192.png?v=2" type="image/png">
     <!-- Стили для уведомления об установке и переключателя темы -->
     <style>
         .install-prompt {
@@ -161,14 +161,33 @@
     </div>
     <!-- Регистрация Service Worker и логика переключения темы -->
     <script>
-        // Регистрация Service Worker (закомментировано для локального тестирования)
-        // if ('serviceWorker' in navigator) {
-        //     window.addEventListener('load', () => {
-        //         navigator.serviceWorker.register('/sw.js')
-        //             .then(registration => console.log('Service Worker registered:', registration))
-        //             .catch(error => console.error('Service Worker registration failed:', error));
-        //     });
-        // }
+        // Регистрация Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('Service Worker registered with scope:', registration.scope);
+
+                        // Проверяем обновления каждые 60 секунд
+                        setInterval(() => {
+                            if (registration.active) {
+                                registration.active.postMessage({ type: 'CHECK_FOR_UPDATES' });
+                            }
+                        }, 60 * 1000);
+
+                        // Слушаем сообщения от Service Worker
+                        navigator.serviceWorker.addEventListener('message', event => {
+                            if (event.data && event.data.type === 'UPDATE_AVAILABLE') {
+                                console.log('Update available, reloading page...');
+                                window.location.reload();
+                            }
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Service Worker registration failed:', error);
+                    });
+            });
+        }
 
         // Логика уведомления об установке
         let deferredPrompt;
@@ -224,4 +243,4 @@
         });
     </script>
 </body>
-</html>
+</html> 

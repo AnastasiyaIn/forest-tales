@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Лесные Проказники - Интерактив</title>
+    <!-- Подключаем manifest.json для PWA -->
+    <link rel="manifest" href="/manifest.json">
     <!-- Подключаем шрифт Nunito через Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -56,10 +58,38 @@
     </footer>
     <script type="module" src="interactive.js"></script>
     <script>
+        // Регистрация Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('Service Worker registered with scope:', registration.scope);
+
+                        // Проверяем обновления каждые 60 секунд
+                        setInterval(() => {
+                            if (registration.active) {
+                                registration.active.postMessage({ type: 'CHECK_FOR_UPDATES' });
+                            }
+                        }, 60 * 1000);
+
+                        // Слушаем сообщения от Service Worker
+                        navigator.serviceWorker.addEventListener('message', event => {
+                            if (event.data && event.data.type === 'UPDATE_AVAILABLE') {
+                                console.log('Update available, reloading page...');
+                                window.location.reload();
+                            }
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Service Worker registration failed:', error);
+                    });
+            });
+        }
+
         // Проверяем сохранённую тему при загрузке страницы
         if (localStorage.getItem('theme') === 'dark') {
             document.body.classList.add('dark-theme');
         }
     </script>
 </body>
-</html>
+</html> 

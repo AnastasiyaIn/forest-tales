@@ -87,8 +87,14 @@ async function displayMaze(interactive, step, interactiveContainer, storyIndex, 
     // Создаём сетку лабиринта
     const mazeGrid = document.createElement('div');
     mazeGrid.className = 'maze-grid';
-    mazeGrid.style.gridTemplateRows = `repeat(${selectedLevel.rows}, 60px)`; // Фиксируем размер клеток
-    mazeGrid.style.gridTemplateColumns = `repeat(${selectedLevel.cols}, 60px)`;
+    // Проверяем, что mazeGrid существует перед установкой стилей
+    if (mazeGrid) {
+        mazeGrid.style.gridTemplateRows = `repeat(${selectedLevel.rows}, 60px)`; // Фиксируем размер клеток
+        mazeGrid.style.gridTemplateColumns = `repeat(${selectedLevel.cols}, 60px)`;
+    } else {
+        console.error('Failed to create mazeGrid element');
+        return;
+    }
 
     // Текущая позиция персонажа
     let playerPosition = { row: selectedLevel.start.row, col: selectedLevel.start.col };
@@ -246,7 +252,12 @@ async function displayMaze(interactive, step, interactiveContainer, storyIndex, 
 
         // Перемещаем персонажа в DOM
         const newCell = mazeGrid.querySelector(`.maze-cell[data-row="${newRow}"][data-col="${newCol}"]`);
-        newCell.appendChild(playerElement);
+        if (newCell && playerElement) {
+            newCell.appendChild(playerElement);
+        } else {
+            console.error('Failed to move player: newCell or playerElement is null');
+            return;
+        }
 
         // Проверяем победу
         if (playerPosition.row === selectedLevel.end.row && playerPosition.col === selectedLevel.end.col) {
@@ -396,16 +407,17 @@ async function initInteractivePage() {
         const interactive = data.interactives[interactiveId];
         console.log('Loaded interactive data:', interactive);
 
+        // Устанавливаем заголовки и описания на русском
         if (interactive.type === 'quiz') {
             interactiveTitleElement.textContent = 'Викторина: ответь правильно на вопросы';
         } else if (interactive.type === 'match') {
             interactiveTitleElement.textContent = 'Найди пары';
             const description = document.createElement('p');
             description.className = 'interactive-description';
-            description.textContent = 'Соедини одинаковые карточки, чтобы найти все пары!';
+            description.textContent = 'Найди одинаковые карточки!';
             interactiveContainer.appendChild(description);
         } else if (interactive.type === 'evolution') {
-            interactiveTitleElement.textContent = 'Лесная эволюция';
+            interactiveTitleElement.textContent = 'Эволюция леса';
         } else if (interactive.type === 'puzzle') {
             interactiveTitleElement.textContent = 'Собери лесной пазл';
             const description = document.createElement('p');
@@ -542,7 +554,7 @@ async function initInteractivePage() {
             const resultDiv = document.createElement('div');
             resultDiv.className = 'quiz-result';
             const resultText = document.createElement('p');
-            resultText.textContent = isCorrect ? 'Правильно!' : 'Неправильно, попробуй ещё раз!';
+            resultText.textContent = isCorrect ? 'Правильно!' : 'Не верно';
             resultDiv.appendChild(resultText);
 
             if (explanation) {
